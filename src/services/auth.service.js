@@ -20,11 +20,6 @@ class AuthService {
         const user_created = await UserRepository.create(name, email, password_hashed)
         const user_id_created = user_created._id
 
-        //CREAMOS UN JSON WEB TOKEN
-        //Un JSON web token es un objeto pasado a texto con una firma (SIGNATURE)
-        //Vamos a enviar entre JWT por URL 
-
-        //.sing() firmar un token
         const verification_token = jwt.sign(
             {
                 user_id: user_id_created
@@ -47,7 +42,7 @@ class AuthService {
 
     static async verifyEmail (verification_token){
         try{
-            //Nos dice si el token esta firmado con x clave
+
             const payload = jwt.verify(
                 verification_token, 
                 ENVIRONMENT.JWT_SECRET
@@ -80,13 +75,6 @@ class AuthService {
     }
 
     static async login (email, password){
-        /* 
-        -Buscar al usuario por email
-        -Validar que exista
-        -Validar que este verificado su mail
-        -Comparar la password recibida con la del usuario
-        -Genera un token con datos de sesion del usuario y responderlo
-        */
 
         const user_found = await UserRepository.getByEmail(email)
         
@@ -103,7 +91,6 @@ class AuthService {
             throw new ServerError(401, 'Contraseña invalida')
         }
 
-        //creo un token con datos de sesion (DATOS NO SENSIBLES)
         const auth_token = jwt.sign(
             {
                 name: user_found.name,
@@ -123,23 +110,3 @@ class AuthService {
 }
 
 export default AuthService
-
-/* 
-AUTOMATIZACION DE GENERADOR DE CLAVES PARA JWT
-
-Creo esta tabla o coleccion
-- type: "AUTH" | "PRODUCTS" | "SESSIONS"
-- id : INT | STRING
-- secret : STRING
-- expire_in : DATE
-- created_at: DATE
-- active: boolean
-
-PARA CREAR: 
-    Cada vez que creemos el token usamos el ultimo registro de la tabla
-    Si el registro esta expirado crear uno nuevo
-    y guardamos en el token el secret_id (el id de esa clave)
-
-PARA USAR/VERIFICAR: 
-    Vas a tomar el secret_id y vas a buscar el la DB si existe un secreto con ese secret_id, en caso de existir vas a verificar el token con ese secret
-*/

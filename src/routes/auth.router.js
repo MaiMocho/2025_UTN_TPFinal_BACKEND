@@ -6,7 +6,6 @@ import { loginSchema, registerSchema } from "../schemas/auth.schema.js";
 
 const authRouter = Router()
 
-
 authRouter.post(
     '/register',
     validateRequest(registerSchema),
@@ -20,7 +19,6 @@ authRouter.get(
 
 authRouter.post(
     '/login',
-    validateRequest(loginSchema),
     AuthController.login
 )
 
