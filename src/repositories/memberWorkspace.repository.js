@@ -19,7 +19,6 @@ class MemberWorkspaceRepository {
 
     static async getByUserIdAndWorkspaceId(user_id, workspace_id) {
         try {
-            // Buscamos un documento que coincida con ambos IDs
             const member = await MemberWorkspace.findOne({ 
                 id_user: user_id, 
                 id_workspace: workspace_id 
@@ -34,16 +33,10 @@ class MemberWorkspaceRepository {
 
     static async getAllByUserId(user_id) {
         try {
-            // .populate() funciona perfecto aquí porque todo es Mongo
             const members = await MemberWorkspace.find({ id_user: user_id })
                 .populate('id_workspace'); 
 
-            // Formateamos la salida para que el front reciba algo limpio
-            /* OJO: Al hacer populate, id_workspace deja de ser un ID y pasa a ser 
-            el OBJETO completo del workspace.
-            */
             const members_list_formatted = members.map(member => {
-                // Validación por si un workspace fue borrado físicamente pero el miembro no
                 if (!member.id_workspace) return null; 
 
                 return {
@@ -52,7 +45,7 @@ class MemberWorkspaceRepository {
                     workspace_url_image: member.id_workspace.url_image,
                     member_role: member.role
                 };
-            }).filter(item => item !== null); // Quitamos nulos
+            }).filter(item => item !== null);
 
             return members_list_formatted;
         }
