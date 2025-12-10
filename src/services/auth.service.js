@@ -99,7 +99,7 @@ class AuthService {
             },
             ENVIRONMENT.JWT_SECRET,
             {
-                expiresIn: '30s'
+                expiresIn: '24h'
             }
         )
 
