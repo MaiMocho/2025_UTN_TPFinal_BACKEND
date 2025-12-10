@@ -2,16 +2,14 @@ import nodemailer from 'nodemailer'
 import ENVIRONMENT from './environment.config.js'
 
 const mailTransporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,            
-    secure: false,   
+    service: 'gmail',
     auth: {
         user: ENVIRONMENT.GMAIL_USER,
         pass: ENVIRONMENT.GMAIL_PASSWORD
     },
-    family: 4,             
-    connectionTimeout: 10000, 
-    greetingTimeout: 5000
+    tls: {
+        rejectUnauthorized: false
+    }
 })
 
 export default mailTransporter
