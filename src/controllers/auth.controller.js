@@ -17,6 +17,7 @@ class AuthController {
         }
         catch(error){
             if(error.status){
+                console.error("ERROR EN REGISTER X DIO:", error),
                 response.status(error.status).json({
                     ok:false,
                     message: error.message,
