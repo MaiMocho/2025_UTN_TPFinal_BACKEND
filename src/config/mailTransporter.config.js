@@ -11,7 +11,8 @@ const mailTransporter = nodemailer.createTransport({
     },
     tls: {
         rejectUnauthorized: false
-    }
+    },
+    family: 4
 })
 
 export default mailTransporter
