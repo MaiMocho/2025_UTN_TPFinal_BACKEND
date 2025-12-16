@@ -51,13 +51,15 @@ class UserRepository {
 
     static async updateById(id, updateData) {
         try {
-            // new: true devuelve el usuario ya actualizado
             return await User.findByIdAndUpdate(id, updateData, { new: true });
         }
         catch (error) {
             console.error('Error actualizando usuario:', error)
             throw error
         }
+    }
+    static async deleteById(id) {
+        return await User.findByIdAndDelete(id)
     }
 }
 
