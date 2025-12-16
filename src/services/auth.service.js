@@ -17,6 +17,7 @@ class AuthService {
         }
     
         const password_hashed = await bcrypt.hash(password, 12)
+
         const user_created = await UserRepository.create(name, email, password_hashed)
         const user_id_created = user_created._id
 
@@ -27,15 +28,22 @@ class AuthService {
             ENVIRONMENT.JWT_SECRET
         )
 
-        await mailTransporter.sendMail({
-            from: ENVIRONMENT.GMAIL_USER,
-            to: email,
-            subject: 'Verifica tu cuenta de mail',
-            html: `
-                <h1>Verifica tu cuenta de mail</h1>
-                <a href="${ENVIRONMENT.URL_BACKEND}/api/auth/verify-email/${verification_token}">Verificar</a>
-            `
-        })
+        try {
+            await mailTransporter.sendMail({
+                from: ENVIRONMENT.GMAIL_USER,
+                to: email,
+                subject: 'Verifica tu cuenta de mail',
+                html: `
+                    <h1>Verifica tu cuenta de mail</h1>
+                    <a href="${ENVIRONMENT.URL_BACKEND}/api/auth/verify-email/${verification_token}">Verificar</a>
+                `
+            })
+        } catch (error) {
+            console.error("Fallo al enviar mail, eliminando usuario...", error)
+            await UserRepository.deleteById(user_created._id)
+
+            throw new ServerError(500, 'Error al enviar el email de verificación. Inténtalo de nuevo.')
+        }
 
         return
     }
@@ -66,7 +74,6 @@ class AuthService {
             return 
         }
         catch(error){
-            //Checkeamos si el error es de la verificacion del token
             if(error instanceof jwt.JsonWebTokenError){
                 throw new ServerError(400, 'Accion denegada, token invalido')
             }
