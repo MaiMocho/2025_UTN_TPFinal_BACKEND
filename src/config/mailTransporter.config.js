@@ -2,12 +2,13 @@ import nodemailer from 'nodemailer'
 import ENVIRONMENT from './environment.config.js'
 
 const mailTransporter = nodemailer.createTransport({
-    host: 'smtp-relay.brevo.com',
-    port: 587,
-    secure: false,
+    service: 'gmail',
     auth: {
-        user: 'el_email_con_que_te_registraste@gmail.com',
-        pass: 'la_clave_larga_que_te_dio_brevo'
+        user: ENVIRONMENT.GMAIL_USER,
+        pass: ENVIRONMENT.GMAIL_PASSWORD
+    },
+    tls: {
+        rejectUnauthorized: false
     }
 })
 export default mailTransporter
