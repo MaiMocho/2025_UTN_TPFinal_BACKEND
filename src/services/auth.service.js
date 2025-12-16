@@ -4,12 +4,12 @@ import { ServerError } from "../error.js";
 import UserRepository from "../repositories/user.repository.js";
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
-
+import nodemailer from 'nodemailer'
 
 class AuthService {
     static async register(email, password, name){
 
-        console.log(email, name, password)
+        console.log("Intentando registrar:", email, name)
         const user = await UserRepository.getByEmail(email)
         
         if(user){
@@ -22,42 +22,44 @@ class AuthService {
         const user_id_created = user_created._id
 
         const verification_token = jwt.sign(
-            {
-                user_id: user_id_created
-            },
-            ENVIRONMENT.JWT_SECRET
+            { user_id: user_id_created },
+            ENVIRONMENT.JWT_SECRET,
+            { expiresIn: '1d' }
         )
 
+        const verificationLink = `${ENVIRONMENT.URL_BACKEND}/api/auth/verify-email/${verification_token}`
+
         try {
-            await mailTransporter.sendMail({
-                from: ENVIRONMENT.GMAIL_USER,
+            const info = await mailTransporter.sendMail({
+                from: '"Matsu App" <no-reply@matsu.dev>',
                 to: email,
                 subject: 'Verifica tu cuenta de mail',
                 html: `
-                    <h1>Verifica tu cuenta de mail</h1>
-                    <a href="${ENVIRONMENT.URL_BACKEND}/api/auth/verify-email/${verification_token}">Verificar</a>
+                    <h1>Hola ${name}</h1>
+                    <p>Por favor verifica tu cuenta:</p>
+                    <a href="${verificationLink}">Verificar Cuenta</a>
                 `
             })
+
+            const previewURL = nodemailer.getTestMessageUrl(info)
+            console.log('📧 Ethereal URL:', previewURL); 
+
+            return { previewURL, verificationLink }
+
         } catch (error) {
-            console.error("Fallo al enviar mail, eliminando usuario...", error)
+            console.error("Fallo mail, borrando usuario...", error)
             await UserRepository.deleteById(user_created._id)
-
-            throw new ServerError(500, 'Error al enviar el email de verificación. Inténtalo de nuevo.')
+            throw new ServerError(500, 'Error al enviar email. Inténtalo de nuevo.')
         }
-
-        return
     }
 
     static async verifyEmail (verification_token){
         try{
-
-            const payload = jwt.verify(
-                verification_token, 
-                ENVIRONMENT.JWT_SECRET
-            )
+            const payload = jwt.verify(verification_token, ENVIRONMENT.JWT_SECRET)
             const {user_id} = payload
+            
             if(!user_id){
-                throw new ServerError(400, 'Accion denegada, token con datos insuficientes')
+                throw new ServerError(400, 'Token inválido')
             } 
 
             const user_found = await UserRepository.getById(user_id)
@@ -66,37 +68,29 @@ class AuthService {
             }
 
             if(user_found.verified_email){
-                throw new ServerError(400, 'Usuario ya validado')
+                // Ya estaba verificado, seguimos
+                return 
             }
 
             await UserRepository.updateById(user_id, {verified_email: true})
-
             return 
         }
         catch(error){
             if(error instanceof jwt.JsonWebTokenError){
-                throw new ServerError(400, 'Accion denegada, token invalido')
+                throw new ServerError(400, 'Token inválido o expirado')
             }
             throw error
         }
     }
 
     static async login (email, password){
-
         const user_found = await UserRepository.getByEmail(email)
         
-        if(!user_found) {
-            throw new ServerError(404, 'Usuario con este mail no encontrado')
-        }
-        
-        if(!user_found.verified_email){
-            throw new ServerError(401, 'Usuario con mail no verificado')
-        }
+        if(!user_found) throw new ServerError(404, 'Usuario no encontrado')
+        if(!user_found.verified_email) throw new ServerError(401, 'Email no verificado')
 
-        const is_same_passoword = await bcrypt.compare( password, user_found.password )
-        if(!is_same_passoword){
-            throw new ServerError(401, 'Contraseña invalida')
-        }
+        const is_same = await bcrypt.compare(password, user_found.password)
+        if(!is_same) throw new ServerError(401, 'Contraseña incorrecta')
 
         const auth_token = jwt.sign(
             {
@@ -105,14 +99,10 @@ class AuthService {
                 id: user_found._id,
             },
             ENVIRONMENT.JWT_SECRET,
-            {
-                expiresIn: '24h'
-            }
+            { expiresIn: '24h' }
         )
 
-        return {
-            auth_token: auth_token
-        }
+        return { auth_token }
     }
 }
 

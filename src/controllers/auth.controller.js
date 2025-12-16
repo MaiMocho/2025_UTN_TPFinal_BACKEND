@@ -8,11 +8,13 @@ class AuthController {
             console.log('Registro recibido:', request.body)
             const { email, password, name } = request.body
             
-            await AuthService.register(email, password, name)
+            const result = await AuthService.register(email, password, name)
+            
             response.status(201).json({
                 ok: true,
                 message: 'Usuario registrado con exito',
-                status: 201
+                status: 201,
+                data_development: result 
             })
         }
         catch(error){
@@ -24,9 +26,7 @@ class AuthController {
                 })
             }
             else{
-                console.error(
-                    'ERROR AL REGISTRAR', error
-                )
+                console.error('ERROR AL REGISTRAR', error)
                 response.status(500).json({
                     ok: false,
                     message: 'Error interno del servidor',
@@ -41,26 +41,18 @@ class AuthController {
             const {verification_token} = request.params
 
             await AuthService.verifyEmail(verification_token)
+
             response.redirect(
                 ENVIRONMENT.URL_FRONTEND + '/login?from=verified_email'
             )
         }
         catch(error){
-
-
             if(error.status){
-                response.send(
-                    `<h1>${error.message}</h1>`
-                )
+                response.send(`<h1>${error.message}</h1>`)
             }
             else{
-                console.error(
-                    'ERROR AL REGISTRAR', error
-                )
-
-                response.send(
-                    `<h1>Error en el servidor, intentelo mas tarde</h1>`
-                )
+                console.error('ERROR AL VERIFICAR', error)
+                response.send(`<h1>Error en el servidor, intentelo mas tarde</h1>`)
             }
         }
     }
@@ -71,17 +63,14 @@ class AuthController {
 
             const { auth_token } = await AuthService.login(email, password)
 
-            response.status(200).json(
-                {
-                    ok: true, 
-                    message: 'Usuario logueado con exito',
-                    status: 200,
-                    body: {
-                        auth_token
-                    }
+            response.status(200).json({
+                ok: true, 
+                message: 'Usuario logueado con exito',
+                status: 200,
+                body: {
+                    auth_token
                 }
-            )
-            return 
+            })
         }
         catch(error){
             if(error.status){
@@ -92,9 +81,7 @@ class AuthController {
                 })
             }
             else{
-                console.error(
-                    'ERROR AL REGISTRAR', error
-                )
+                console.error('ERROR AL LOGIN', error)
                 return response.status(500).json({
                     ok: false,
                     message: 'Error interno del servidor',
@@ -104,6 +91,5 @@ class AuthController {
         }
     }
 }
-
 
 export default AuthController
